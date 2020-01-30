@@ -7,8 +7,16 @@ repositories {
     mavenCentral()
 }
 
+def jdkVersion = JavaVersion.VERSION_12;
+sourceCompatibility = jdkVersion
+targetCompatibility = jdkVersion
+
 application {
     mainClassName = 'ru.hse.lyubortk.cli.Cli'
+}
+
+run {
+    standardInput = System.in
 }
 
 dependencies {
