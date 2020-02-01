@@ -7,9 +7,9 @@ object PostParser extends RegexParsers {
   private val quotedText: Parser[QuotedText] = """'[^']*'|"[^"]*"""".r ^^ { text =>
     QuotedText(text.tail.init)
   }
-  private val word: Parser[Word] = """[^\s'"]+""".r ^^ Word
-  private val pipeline: Parser[Unit] = """|""".r ^^ (_ => ())
-  private val equalsSign: Parser[Unit] = """=""".r ^^ (_ => ())
+  private val word: Parser[Word] = """[^\s'"|=]+""".r ^^ Word
+  private val pipeline: Parser[Unit] = "|" ^^ (_ => ())
+  private val equalsSign: Parser[Unit] = "=" ^^ (_ => ())
   private val text: Parser[Text] = quotedText | word
 
   private val command: Parser[Command] = text ~ (text*) ^^ {
@@ -22,7 +22,10 @@ object PostParser extends RegexParsers {
   private val assignmentExpression: Parser[AssignmentExpression] = (word <~ equalsSign) ~ text ^^ {
     case identifier ~ text => AssignmentExpression(identifier, text)
   }
-  private val expression: Parser[Expression] = pipelineExpression | assignmentExpression
+  private val emptyPipelineExpression: Parser[PipelineExpression] = "" ^^ (_ => PipelineExpression(Seq.empty))
+
+
+  private val expression: Parser[Expression] = assignmentExpression | pipelineExpression | emptyPipelineExpression
 
   def apply(text: String): Either[RuntimeException, Expression] = parseAll(expression, text) match {
     case NoSuccess(msg, _) => Left(new RuntimeException(msg))

@@ -1,42 +1,34 @@
 package ru.hse.lyubortk.cli.commands
 
-import java.io.{InputStream, OutputStream}
+import java.io.InputStream
 
-import scala.sys.process.{Process, ProcessIO}
-import scala.util.control.NonFatal
+import scala.collection.mutable
+import scala.sys.process.{BasicIO, Process}
 
-class CommandExecutor {
-  def execute(command: String, arguments: Seq[String], stdin: InputStream, env: Seq[(String, String)]): InputStream = {
+class CommandExecutor(env: mutable.Map[String, String], builtins: Map[String, Command]) {
+  import ru.hse.lyubortk.cli.commands.CommandExecutor.getExternalCommand
+
+  def execute(command: String, arguments: Seq[String], stdin: InputStream): Option[InputStream] =
+    builtins
+      .getOrElse(command, getExternalCommand(command))
+      .execute(arguments, stdin, env.toSeq)
+}
+
+object CommandExecutor {
+  def getExternalCommand(name: String): Command =
+    (args: Seq[String], stdin: InputStream, env: Seq[(String, String)]) => {
     var processOutput: InputStream = null
-    var processInput: OutputStream = null
-    var processErrOutput: InputStream = null
 
-    val inputHandler: OutputStream => Unit = { input =>
-      processInput = input
-      try {
-        stdin.transferTo(processInput)
-      } catch {
-        case NonFatal(e) => System.err.println(e)
-      } finally {
-        stdin.close()
+    val io = BasicIO.standard(true)
+      .withInput { processStdin =>
+        stdin.transferTo(processStdin)
+        processStdin.close()
       }
-    }
-    val outputHandler: InputStream => Unit = processOutput = _
-    val errOutputHandler: InputStream => Unit = processErrOutput = _
-    val processIO: ProcessIO = new ProcessIO(inputHandler, outputHandler, errOutputHandler)
-    Process(command +: arguments, None, ("a", "a")).run(processIO).exitValue()
-    processErrOutput.transferTo(System.err)
+      .withOutput { processStdout =>
+        processOutput = processStdout
+      }
 
-    try {
-      processErrOutput.close()
-    } catch {
-      case NonFatal(e) => System.err.println(e)
-    }
-    try {
-      processInput.close()
-    } catch {
-      case NonFatal(e) => System.err.println(e)
-    }
-    processOutput
+    Process(name +: args, None, env: _*).run(io)
+    Some(processOutput)
   }
 }
