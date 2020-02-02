@@ -1,9 +1,11 @@
-package ru.hse.lyubortk.cli.parsing
+package ru.hse.lyubortk.cli.parsing.ast
 
-import scala.util.parsing.combinator.RegexParsers
+import ru.hse.lyubortk.cli.parsing.CliParsers
+import ru.hse.lyubortk.cli.parsing.ast.Expression._
+
 import scala.language.postfixOps
 
-object PostParser extends RegexParsers {
+object AstParser extends CliParsers[Expression] {
   private val quotedText: Parser[QuotedText] = """'[^']*'|"[^"]*"""".r ^^ { text =>
     QuotedText(text.tail.init)
   }
@@ -27,20 +29,5 @@ object PostParser extends RegexParsers {
 
   private val expression: Parser[Expression] = assignmentExpression | pipelineExpression | emptyPipelineExpression
 
-  def apply(text: String): Either[RuntimeException, Expression] = parseAll(expression, text) match {
-    case NoSuccess(msg, _) => Left(new RuntimeException(msg))
-    case Success(result, _) => Right(result)
-  }
-
-  sealed trait Text {
-    def text: String
-  }
-
-  case class QuotedText(text: String) extends Text
-  case class Word(text: String) extends Text
-
-  sealed trait Expression
-  case class PipelineExpression(commands: Seq[Command]) extends Expression
-  case class AssignmentExpression(identifier: Word, argument: Text) extends Expression
-  case class Command(commandName: Text, arguments: Seq[Text])
+  override def parser: AstParser.Parser[Expression] = expression
 }

@@ -3,71 +3,72 @@ package ru.hse.lyubortk.cli
 import java.io.InputStream
 
 import ru.hse.lyubortk.cli.commands.CommandExecutor
-import ru.hse.lyubortk.cli.commands.builtins.{Cat, Echo, Exit, Pwd, Wc}
-import ru.hse.lyubortk.cli.parsing.PostParser.{AssignmentExpression, Command, PipelineExpression}
-import ru.hse.lyubortk.cli.parsing.PreParser.SubstitutionText
-import ru.hse.lyubortk.cli.parsing.{PostParser, PreParser}
+import ru.hse.lyubortk.cli.parsing.ParsingError
+import ru.hse.lyubortk.cli.parsing.ast.Expression._
+import ru.hse.lyubortk.cli.parsing.ast.{AstParser, Expression}
+import ru.hse.lyubortk.cli.parsing.substitution.Token._
+import ru.hse.lyubortk.cli.parsing.substitution.{SubstitutionParser, Token}
 
 import scala.collection.mutable
-import scala.util.control.NonFatal
 
-object Cli {
+class Cli(env: Map[String, String],
+          commandExecutorBuilder: mutable.Map[String, String] => CommandExecutor) {
 
-  val env: mutable.Map[String, String] = sys.env.to(mutable.Map).withDefault(_ => "")
-  val commandExecutor = new CommandExecutor(
-    env,
-    Map("cat" -> Cat, "echo" -> Echo, "pwd" -> Pwd, "wc" -> Wc, "exit" -> Exit)
-  )
+  private val environment: mutable.Map[String, String] = mutable.Map(env.toSeq: _*).withDefault(_ => "")
+  private val commandExecutor = commandExecutorBuilder(environment)
 
-  def main(args: Array[String]): Unit = {
+  def start(): Unit = {
     Iterator.continually(io.StdIn.readLine)
       .takeWhile(_ != null)
-      .map(PreParser(_))
-      .flatMap {
-        case Left(exception) =>
-          System.err.println(exception)
-          None
-        case Right(tokens) =>
-          Some(tokens)
+      .flatMap(parseSubstitutions)
+      .map(processSubstitutions)
+      .flatMap(parseAst)
+      .map {
+        case AssignmentExpression(Word(identifier), Text(argument)) => processAssignment(identifier, argument)
+        case PipelineExpression(commands) => processPipeline(commands)
       }
-      .map { tokens =>
-        tokens.map {
-          case SubstitutionText(text) => env(text)
-          case token => token.text
-        }.mkString
+      .takeWhile(_.nonEmpty)
+      .flatten
+      .foreach { pipelineOutput: InputStream =>
+        pipelineOutput.transferTo(System.out)
+        println()
+        pipelineOutput.close()
       }
-      .map(PostParser(_))
-      .flatMap {
-        case Left(exception) =>
-          System.err.println(exception)
-          None
-        case Right(ast) =>
-          Some(ast)
-      }
-      .foreach {
-        case AssignmentExpression(identifier, argument) => env.put(identifier.text, argument.text)
-        case PipelineExpression(commands) =>
-          val lastOutput = commands.foldLeft(Option(InputStream.nullInputStream)) {
-            case (input, Command(commandName, arguments)) =>
-              if (input.isDefined) {
-                val k = commandExecutor.execute(commandName.text, arguments.map(_.text), input.get)
-                input.get.close
-                k
-              } else {
-                None
-              }
-          }
-          if (lastOutput.isEmpty) {
-            return
-          }
-          try {
-            lastOutput.get.transferTo(System.out)
-            System.out.println()
-          } catch {
-            case NonFatal(e) => System.err.println(e)
-          } finally {
-            lastOutput.get.close()
-          }
-      }
+  }
+
+  private def parseSubstitutions(text: String): Option[Seq[Token]] = SubstitutionParser(text) match {
+    case Left(ParsingError(message, unparsedText)) =>
+        System.err.println(message)
+      None
+    case Right(tokens) =>
+      Some(tokens)
+  }
+
+  private def processSubstitutions(tokens: Seq[Token]): String = tokens.map {
+    case SubstitutionText(text) => environment(text)
+    case token => token.text
+  }.mkString
+
+  private def parseAst(text: String): Option[Expression] = AstParser(text) match {
+    case Left(ParsingError(message, unparsedText)) =>
+      System.err.println(message)
+      None
+    case Right(ast) =>
+      Some(ast)
+  }
+
+  private def processAssignment(identifier: String, argument: String): Option[InputStream] = {
+    environment.put(identifier, argument)
+    Some(InputStream.nullInputStream())
+  }
+
+  private def processPipeline(commands: Seq[Command]): Option[InputStream] = {
+    commands.foldLeft(Option(InputStream.nullInputStream)) {
+      case (Some(input), Command(commandName, arguments)) =>
+          val output = commandExecutor.execute(commandName.text, arguments.map(_.text), input)
+          input.close()
+          output
+      case (None, _) => None
+    }
   }
 }

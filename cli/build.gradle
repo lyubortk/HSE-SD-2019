@@ -12,11 +12,11 @@ sourceCompatibility = jdkVersion
 targetCompatibility = jdkVersion
 
 application {
-    mainClassName = 'ru.hse.lyubortk.cli.Cli'
+    mainClassName = 'ru.hse.lyubortk.cli.Main'
 }
 
 run {
-//    standardInput = System.in
+    standardInput = System.in
 }
 
 dependencies {
