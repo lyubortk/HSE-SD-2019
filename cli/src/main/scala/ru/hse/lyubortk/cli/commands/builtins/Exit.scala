@@ -6,5 +6,5 @@ import ru.hse.lyubortk.cli.commands.{Command, CommandResult}
 
 object Exit extends Command {
   override def execute(args: Seq[String], stdin: InputStream, env: Seq[(String, String)]): CommandResult =
-    CommandResult.Exit(InputStream.nullInputStream())
+    CommandResult.Exit()
 }

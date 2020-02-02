@@ -1,11 +1,18 @@
 package ru.hse.lyubortk.cli.commands.builtins
 
-import java.io.{ByteArrayInputStream, InputStream}
+import java.io.InputStream
 
-import ru.hse.lyubortk.cli.commands.{Command, CommandResult}
 import ru.hse.lyubortk.cli.commands.CommandResult.Continue
+import ru.hse.lyubortk.cli.commands.InputStreamOps._
+import ru.hse.lyubortk.cli.commands.{Command, CommandResult}
+
+import scala.util.{Failure, Success, Try}
 
 object Pwd extends Command {
-  override def execute(args: Seq[String], stdin: InputStream, env: Seq[(String, String)]): CommandResult =
-    Continue(new ByteArrayInputStream(System.getProperty("user.dir").getBytes))
+  override def execute(args: Seq[String], stdin: InputStream, env: Seq[(String, String)]): CommandResult = {
+    Try(System.getProperty("user.dir")) match {
+      case Success(value) => Continue(value.inputStream.withNewline)
+      case Failure(exception) => Continue(InputStream.nullInputStream(), exception.getMessage.inputStream.withNewline)
+    }
+  }
 }

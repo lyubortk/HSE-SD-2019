@@ -1,43 +1,54 @@
 package ru.hse.lyubortk.cli.commands.builtins
 
-import java.io.{ByteArrayInputStream, FileInputStream, InputStream}
+import java.io.{ByteArrayInputStream, FileInputStream, IOException, InputStream}
 
 import org.apache.commons.io.input.CountingInputStream
 import ru.hse.lyubortk.cli.commands.CommandResult.Continue
 import ru.hse.lyubortk.cli.commands.{Command, CommandResult}
+import ru.hse.lyubortk.cli.commands.InputStreamOps._
 
 import scala.io.Source
+import scala.util.{Failure, Success, Try, Using}
 
 object Wc extends Command {
   override def execute(args: Seq[String], stdin: InputStream, env: Seq[(String, String)]): CommandResult = {
-    val output = if (args.isEmpty) {
+    if (args.isEmpty) {
       processStdin(stdin)
     } else {
       processArguments(args)
     }
-    Continue(output)
   }
 
-  private def processArguments(args: Seq[String]): InputStream = {
-    val (builder: StringBuilder, totalInfo: Info) =
-      args.foldLeft((new StringBuilder, Info(0, 0, 0))) {
-        case ((stringBuilder, accumulatedInfo), fileName) =>
-          val inputStream = new FileInputStream(fileName)
-          val currentInfo = readInputInfo(inputStream)
-          inputStream.close()
-          stringBuilder.append(currentInfo).append(' ').append(fileName).append("\n")
-          (stringBuilder, accumulatedInfo combine currentInfo)
-      }
-    builder.deleteCharAt(builder.length() - 1)
-    if (args.size > 1) {
-      builder.append("\n").append(totalInfo).append(' ').append("total")
+  private def processArguments(args: Seq[String]): CommandResult = {
+    val errBuilder = new StringBuilder
+    val outputBuilder = new StringBuilder
+    val totalInfo = args.foldLeft(Info.empty) { case (accumulatedInfo, fileName) =>
+      val currentInfo =
+        Using(new FileInputStream(fileName)) { inputStream =>
+          readInputInfo(inputStream)
+        } match {
+          case Success(info) =>
+            outputBuilder.append(info).append(' ').append(fileName).append("\n")
+            info
+          case Failure(exception) =>
+            errBuilder.append(exception.getMessage).append("\n")
+            Info.empty
+        }
+      accumulatedInfo combine currentInfo
     }
-    new ByteArrayInputStream(builder.toString().getBytes)
+    if (args.size > 1) {
+      outputBuilder.append(totalInfo).append(' ').append("total").append("\n")
+    }
+    Continue(outputBuilder.toString().inputStream, errBuilder.toString().inputStream)
   }
 
-  private def processStdin(stdIn: InputStream): InputStream =
-    new ByteArrayInputStream(readInputInfo(stdIn).toString.getBytes)
+  private def processStdin(stdin: InputStream): CommandResult =
+    Try(readInputInfo(stdin)) match {
+      case Success(value) => Continue(value.toString.inputStream.withNewline)
+      case Failure(exception) => Continue(InputStream.nullInputStream(), exception.getMessage.inputStream.withNewline)
+    }
 
+  @throws[IOException]
   private def readInputInfo(input: InputStream): Info = {
     val countingInput = new CountingInputStream(input)
     val source = Source.fromInputStream(countingInput)
@@ -48,7 +59,7 @@ object Wc extends Command {
     Info(lines, words, countingInput.getCount)
   }
 
-  private case class Info(lines: Int, words: Int, bytes: Int) {
+  protected case class Info(lines: Int, words: Int, bytes: Int) {
     def combine(other: Info): Info = Info(
       lines + other.lines,
       words + other.words,
@@ -57,4 +68,9 @@ object Wc extends Command {
 
     override val toString: String = s"$lines $words $bytes"
   }
+
+  object Info {
+    val empty: Info = Info(0, 0, 0)
+  }
+
 }

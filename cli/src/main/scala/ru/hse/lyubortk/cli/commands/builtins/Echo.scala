@@ -1,11 +1,12 @@
 package ru.hse.lyubortk.cli.commands.builtins
 
-import java.io.{ByteArrayInputStream, InputStream}
+import java.io.InputStream
 
 import ru.hse.lyubortk.cli.commands.CommandResult.Continue
+import ru.hse.lyubortk.cli.commands.InputStreamOps._
 import ru.hse.lyubortk.cli.commands.{Command, CommandResult}
 
 object Echo extends Command {
   override def execute(args: Seq[String], stdin: InputStream, env: Seq[(String, String)]): CommandResult =
-    Continue(new ByteArrayInputStream(args.mkString(" ").getBytes))
+    Continue(args.mkString(" ").inputStream.withNewline)
 }

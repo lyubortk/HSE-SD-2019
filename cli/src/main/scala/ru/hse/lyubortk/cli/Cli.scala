@@ -1,7 +1,9 @@
 package ru.hse.lyubortk.cli
 
-import java.io.InputStream
+import java.io.{BufferedReader, InputStream, PrintStream}
 
+import ru.hse.lyubortk.cli.Cli.IO
+import ru.hse.lyubortk.cli.Cli._
 import ru.hse.lyubortk.cli.commands.CommandResult.{Continue, Exit}
 import ru.hse.lyubortk.cli.commands.{CommandExecutor, CommandResult}
 import ru.hse.lyubortk.cli.parsing.{CliParser, ParsingError}
@@ -11,17 +13,20 @@ import ru.hse.lyubortk.cli.parsing.substitution.Token
 import ru.hse.lyubortk.cli.parsing.substitution.Token._
 
 import scala.collection.mutable
+import scala.util.{Failure, Try, Using}
 
 class Cli(env: Map[String, String],
           commandExecutorBuilder: mutable.Map[String, String] => CommandExecutor,
           substitutionParser: CliParser[Seq[Token]],
-          astParser: CliParser[Expression]) {
+          astParser: CliParser[Expression],
+          io: IO = IO()) {
 
+  import io._
   private val environment: mutable.Map[String, String] = mutable.Map(env.toSeq: _*).withDefault(_ => "")
   private val commandExecutor = commandExecutorBuilder(environment)
 
   def start(): Unit = {
-    Iterator.continually(io.StdIn.readLine)
+    Iterator.continually(in.readLine)
       .takeWhile(_ != null)
       .flatMap(parseSubstitutions)
       .map(processSubstitutions)
@@ -36,8 +41,8 @@ class Cli(env: Map[String, String],
   }
 
   private def parseSubstitutions(text: String): Option[Seq[Token]] = substitutionParser(text) match {
-    case Left(ParsingError(message, unparsedText)) =>
-      System.err.println(message)
+    case Left(ParsingError(message, _)) =>
+      err.println(message)
       None
     case Right(tokens) =>
       Some(tokens)
@@ -49,8 +54,8 @@ class Cli(env: Map[String, String],
   }.mkString
 
   private def parseAst(text: String): Option[Expression] = astParser(text) match {
-    case Left(ParsingError(message, unparsedText)) =>
-      System.err.println(message)
+    case Left(ParsingError(message, _)) =>
+      err.println(message)
       None
     case Right(ast) =>
       Some(ast)
@@ -63,23 +68,38 @@ class Cli(env: Map[String, String],
 
   private def processAssignment(identifier: String, argument: String): CommandResult = {
     environment.put(identifier, argument)
-    Continue(InputStream.nullInputStream())
+    Continue()
   }
 
   private def processPipeline(commands: Seq[Command]): CommandResult = {
     commands.foldLeft(Continue(InputStream.nullInputStream): CommandResult) {
-      case (Continue(input), Command(commandName, arguments)) =>
-        val output = commandExecutor.execute(commandName.text, arguments.map(_.text), input)
-        input.close()
-        output
+      case (Continue(output, errOutput), Command(commandName, arguments)) =>
+        val result = commandExecutor.execute(commandName.text, arguments.map(_.text), output)
+        Try(output.close()).printError(err)
+        Using(errOutput)(_.transferTo(err)).printError(err)
+        result
       case (exit, _) => exit
     }
   }
 
   private def printResult(result: CommandResult): Unit = {
-    val CommandResult(output) = result
-    output.transferTo(System.out)
-    println()
-    output.close()
+    val CommandResult(output, errOutput) = result
+    Using(output)(_.transferTo(out)).printError(err)
+    Using(errOutput)(_.transferTo(err)).printError(err)
+  }
+}
+
+object Cli {
+  case class IO(out: PrintStream = Console.out,
+                err: PrintStream = Console.err,
+                in: BufferedReader = Console.in)
+
+  implicit class TryErrPrinter(val result: Try[_]) extends AnyVal {
+    def printError(err: PrintStream): Unit = {
+      result match {
+        case Failure(exception) => err.println(exception.getMessage)
+        case _ => ()
+      }
+    }
   }
 }
