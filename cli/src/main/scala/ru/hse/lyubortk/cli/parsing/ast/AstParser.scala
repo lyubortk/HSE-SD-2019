@@ -1,11 +1,11 @@
 package ru.hse.lyubortk.cli.parsing.ast
 
-import ru.hse.lyubortk.cli.parsing.CliParsers
+import ru.hse.lyubortk.cli.parsing.CliParser
 import ru.hse.lyubortk.cli.parsing.ast.Expression._
 
 import scala.language.postfixOps
 
-object AstParser extends CliParsers[Expression] {
+object AstParser extends CliParser[Expression] {
   private val quotedText: Parser[QuotedText] = """'[^']*'|"[^"]*"""".r ^^ { text =>
     QuotedText(text.tail.init)
   }

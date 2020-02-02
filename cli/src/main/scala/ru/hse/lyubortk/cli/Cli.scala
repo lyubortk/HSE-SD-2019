@@ -4,16 +4,18 @@ import java.io.InputStream
 
 import ru.hse.lyubortk.cli.commands.CommandResult.{Continue, Exit}
 import ru.hse.lyubortk.cli.commands.{CommandExecutor, CommandResult}
-import ru.hse.lyubortk.cli.parsing.ParsingError
+import ru.hse.lyubortk.cli.parsing.{CliParser, ParsingError}
 import ru.hse.lyubortk.cli.parsing.ast.Expression._
-import ru.hse.lyubortk.cli.parsing.ast.{AstParser, Expression}
+import ru.hse.lyubortk.cli.parsing.ast.Expression
+import ru.hse.lyubortk.cli.parsing.substitution.Token
 import ru.hse.lyubortk.cli.parsing.substitution.Token._
-import ru.hse.lyubortk.cli.parsing.substitution.{SubstitutionParser, Token}
 
 import scala.collection.mutable
 
 class Cli(env: Map[String, String],
-          commandExecutorBuilder: mutable.Map[String, String] => CommandExecutor) {
+          commandExecutorBuilder: mutable.Map[String, String] => CommandExecutor,
+          substitutionParser: CliParser[Seq[Token]],
+          astParser: CliParser[Expression]) {
 
   private val environment: mutable.Map[String, String] = mutable.Map(env.toSeq: _*).withDefault(_ => "")
   private val commandExecutor = commandExecutorBuilder(environment)
@@ -33,7 +35,7 @@ class Cli(env: Map[String, String],
       .foreach(_ => ())
   }
 
-  private def parseSubstitutions(text: String): Option[Seq[Token]] = SubstitutionParser(text) match {
+  private def parseSubstitutions(text: String): Option[Seq[Token]] = substitutionParser(text) match {
     case Left(ParsingError(message, unparsedText)) =>
       System.err.println(message)
       None
@@ -46,7 +48,7 @@ class Cli(env: Map[String, String],
     case token => token.text
   }.mkString
 
-  private def parseAst(text: String): Option[Expression] = AstParser(text) match {
+  private def parseAst(text: String): Option[Expression] = astParser(text) match {
     case Left(ParsingError(message, unparsedText)) =>
       System.err.println(message)
       None

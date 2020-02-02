@@ -1,11 +1,11 @@
 package ru.hse.lyubortk.cli.parsing.substitution
 
-import ru.hse.lyubortk.cli.parsing.CliParsers
+import ru.hse.lyubortk.cli.parsing.CliParser
 import ru.hse.lyubortk.cli.parsing.substitution.Token._
 
 import scala.language.postfixOps
 
-object SubstitutionParser extends CliParsers[Seq[Token]] {
+object SubstitutionParser extends CliParser[Seq[Token]] {
   override val skipWhitespace = false
 
   private val singleQuotedText: Parser[SingleQuotedText] = """'[^']*'""".r ^^ SingleQuotedText
