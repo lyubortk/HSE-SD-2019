@@ -2,13 +2,15 @@ package ru.hse.lyubortk.cli.commands
 
 import java.io.InputStream
 
+import ru.hse.lyubortk.cli.commands.CommandResult.Continue
+
 import scala.collection.mutable
 import scala.sys.process.{BasicIO, Process}
 
 class CommandExecutor(env: mutable.Map[String, String], builtins: Map[String, Command]) {
   import ru.hse.lyubortk.cli.commands.CommandExecutor.getExternalCommand
 
-  def execute(command: String, arguments: Seq[String], stdin: InputStream): Option[InputStream] =
+  def execute(command: String, arguments: Seq[String], stdin: InputStream): CommandResult =
     builtins
       .getOrElse(command, getExternalCommand(command))
       .execute(arguments, stdin, env.toSeq)
@@ -29,6 +31,6 @@ object CommandExecutor {
       }
 
     Process(name +: args, None, env: _*).run(io)
-    Some(processOutput)
+    Continue(processOutput)
   }
 }

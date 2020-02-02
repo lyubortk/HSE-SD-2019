@@ -3,18 +3,19 @@ package ru.hse.lyubortk.cli.commands.builtins
 import java.io.{ByteArrayInputStream, FileInputStream, InputStream}
 
 import org.apache.commons.io.input.CountingInputStream
-import ru.hse.lyubortk.cli.commands.Command
+import ru.hse.lyubortk.cli.commands.CommandResult.Continue
+import ru.hse.lyubortk.cli.commands.{Command, CommandResult}
 
 import scala.io.Source
 
 object Wc extends Command {
-  override def execute(args: Seq[String], stdin: InputStream, env: Seq[(String, String)]): Option[InputStream] = {
+  override def execute(args: Seq[String], stdin: InputStream, env: Seq[(String, String)]): CommandResult = {
     val output = if (args.isEmpty) {
       processStdin(stdin)
     } else {
       processArguments(args)
     }
-    Some(output)
+    Continue(output)
   }
 
   private def processArguments(args: Seq[String]): InputStream = {

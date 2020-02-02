@@ -2,7 +2,8 @@ package ru.hse.lyubortk.cli
 
 import java.io.InputStream
 
-import ru.hse.lyubortk.cli.commands.CommandExecutor
+import ru.hse.lyubortk.cli.commands.CommandResult.{Continue, Exit}
+import ru.hse.lyubortk.cli.commands.{CommandExecutor, CommandResult}
 import ru.hse.lyubortk.cli.parsing.ParsingError
 import ru.hse.lyubortk.cli.parsing.ast.Expression._
 import ru.hse.lyubortk.cli.parsing.ast.{AstParser, Expression}
@@ -23,22 +24,18 @@ class Cli(env: Map[String, String],
       .flatMap(parseSubstitutions)
       .map(processSubstitutions)
       .flatMap(parseAst)
-      .map {
-        case AssignmentExpression(Word(identifier), Text(argument)) => processAssignment(identifier, argument)
-        case PipelineExpression(commands) => processPipeline(commands)
+      .map(processExpression)
+      .tapEach(printResult)
+      .takeWhile {
+        case _: Exit => false
+        case _ => true
       }
-      .takeWhile(_.nonEmpty)
-      .flatten
-      .foreach { pipelineOutput: InputStream =>
-        pipelineOutput.transferTo(System.out)
-        println()
-        pipelineOutput.close()
-      }
+      .foreach(_ => ())
   }
 
   private def parseSubstitutions(text: String): Option[Seq[Token]] = SubstitutionParser(text) match {
     case Left(ParsingError(message, unparsedText)) =>
-        System.err.println(message)
+      System.err.println(message)
       None
     case Right(tokens) =>
       Some(tokens)
@@ -57,18 +54,30 @@ class Cli(env: Map[String, String],
       Some(ast)
   }
 
-  private def processAssignment(identifier: String, argument: String): Option[InputStream] = {
-    environment.put(identifier, argument)
-    Some(InputStream.nullInputStream())
+  private def processExpression(expression: Expression): CommandResult = expression match {
+    case AssignmentExpression(Word(identifier), Text(argument)) => processAssignment(identifier, argument)
+    case PipelineExpression(commands) => processPipeline(commands)
   }
 
-  private def processPipeline(commands: Seq[Command]): Option[InputStream] = {
-    commands.foldLeft(Option(InputStream.nullInputStream)) {
-      case (Some(input), Command(commandName, arguments)) =>
-          val output = commandExecutor.execute(commandName.text, arguments.map(_.text), input)
-          input.close()
-          output
-      case (None, _) => None
+  private def processAssignment(identifier: String, argument: String): CommandResult = {
+    environment.put(identifier, argument)
+    Continue(InputStream.nullInputStream())
+  }
+
+  private def processPipeline(commands: Seq[Command]): CommandResult = {
+    commands.foldLeft(Continue(InputStream.nullInputStream): CommandResult) {
+      case (Continue(input), Command(commandName, arguments)) =>
+        val output = commandExecutor.execute(commandName.text, arguments.map(_.text), input)
+        input.close()
+        output
+      case (exit, _) => exit
     }
+  }
+
+  private def printResult(result: CommandResult): Unit = {
+    val CommandResult(output) = result
+    output.transferTo(System.out)
+    println()
+    output.close()
   }
 }
