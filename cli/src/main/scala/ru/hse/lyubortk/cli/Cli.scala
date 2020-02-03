@@ -22,6 +22,7 @@ class Cli(env: Map[String, String],
           io: IO = IO()) {
 
   import io._
+  private implicit val errorImplicit: PrintStream = io.err
   private val environment: mutable.Map[String, String] = mutable.Map(env.toSeq: _*).withDefault(_ => "")
   private val commandExecutor = commandExecutorBuilder(environment)
 
@@ -75,8 +76,8 @@ class Cli(env: Map[String, String],
     commands.foldLeft(Continue(InputStream.nullInputStream): CommandResult) {
       case (Continue(output, errOutput), Command(commandName, arguments)) =>
         val result = commandExecutor.execute(commandName.text, arguments.map(_.text), output)
-        Try(output.close()).printError(err)
-        Using(errOutput)(_.transferTo(err)).printError(err)
+        Try(output.close()).printError
+        Using(errOutput)(_.transferTo(err)).printError
         result
       case (exit, _) => exit
     }
@@ -84,8 +85,8 @@ class Cli(env: Map[String, String],
 
   private def printResult(result: CommandResult): Unit = {
     val CommandResult(output, errOutput) = result
-    Using(output)(_.transferTo(out)).printError(err)
-    Using(errOutput)(_.transferTo(err)).printError(err)
+    Using(output)(_.transferTo(out)).printError
+    Using(errOutput)(_.transferTo(err)).printError
   }
 }
 
@@ -95,7 +96,7 @@ object Cli {
                 in: BufferedReader = Console.in)
 
   implicit class TryErrPrinter(val result: Try[_]) extends AnyVal {
-    def printError(err: PrintStream): Unit = {
+    def printError(implicit err: PrintStream): Unit = {
       result match {
         case Failure(exception) => err.println(exception.getMessage)
         case _ => ()
