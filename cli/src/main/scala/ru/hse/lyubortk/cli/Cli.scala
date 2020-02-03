@@ -29,9 +29,9 @@ class Cli(env: Map[String, String],
   def start(): Unit = {
     Iterator.continually(in.readLine)
       .takeWhile(_ != null)
-      .flatMap(parseSubstitutions)
+      .flatMap(parse(substitutionParser))
       .map(processSubstitutions)
-      .flatMap(parseAst)
+      .flatMap(parse(astParser))
       .map(processExpression)
       .tapEach(printResult)
       .takeWhile {
@@ -41,26 +41,18 @@ class Cli(env: Map[String, String],
       .foreach(_ => ())
   }
 
-  private def parseSubstitutions(text: String): Option[Seq[Token]] = substitutionParser(text) match {
+  private def parse[T](parser: CliParser[T])(text: String) = parser(text) match {
     case Left(ParsingError(message, _)) =>
-      err.println(message)
+      err.println(s"Can't parse command. Parser output: $message")
       None
-    case Right(tokens) =>
-      Some(tokens)
+    case Right(result) =>
+      Some(result)
   }
 
   private def processSubstitutions(tokens: Seq[Token]): String = tokens.map {
     case SubstitutionText(text) => environment(text)
     case token => token.text
   }.mkString
-
-  private def parseAst(text: String): Option[Expression] = astParser(text) match {
-    case Left(ParsingError(message, _)) =>
-      err.println(message)
-      None
-    case Right(ast) =>
-      Some(ast)
-  }
 
   private def processExpression(expression: Expression): CommandResult = expression match {
     case AssignmentExpression(Word(identifier), Text(argument)) => processAssignment(identifier, argument)
@@ -98,7 +90,7 @@ object Cli {
   implicit class TryErrPrinter(val result: Try[_]) extends AnyVal {
     def printError(implicit err: PrintStream): Unit = {
       result match {
-        case Failure(exception) => err.println(exception.getMessage)
+        case Failure(exception) => err.println(s"An error occurred while executing commands: ${exception.getMessage}")
         case _ => ()
       }
     }
