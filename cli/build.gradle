@@ -22,6 +22,8 @@ run {
 dependencies {
     implementation 'org.scala-lang:scala-library:2.13.1'
     implementation 'org.scala-lang.modules:scala-parser-combinators_2.13:1.1.2'
-    compile group: 'commons-io', name: 'commons-io', version: '2.6'
+    implementation group: 'commons-io', name: 'commons-io', version: '2.6'
     testImplementation 'org.scalatest:scalatest_2.13:3.1.0'
+    testImplementation 'junit:junit:4.12'
+    testImplementation group: 'org.scalatestplus', name: 'scalatestplus-junit_2.13', version: '1.0.0-M2'
 }
