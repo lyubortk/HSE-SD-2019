@@ -26,7 +26,6 @@ object AstParser extends CliParser[Expression] {
   }
   private val emptyPipelineExpression: Parser[PipelineExpression] = "" ^^ (_ => PipelineExpression(Seq.empty))
 
-
   private val expression: Parser[Expression] = assignmentExpression | pipelineExpression | emptyPipelineExpression
 
   override def parser: AstParser.Parser[Expression] = expression

@@ -1,11 +1,11 @@
 package ru.hse.lyubortk.cli.commands.builtins
 
-import java.io.{ByteArrayInputStream, FileInputStream, IOException, InputStream}
+import java.io.{FileInputStream, IOException, InputStream}
 
 import org.apache.commons.io.input.CountingInputStream
 import ru.hse.lyubortk.cli.commands.CommandResult.Continue
-import ru.hse.lyubortk.cli.commands.{Command, CommandResult}
 import ru.hse.lyubortk.cli.commands.InputStreamOps._
+import ru.hse.lyubortk.cli.commands.{Command, CommandResult}
 
 import scala.io.Source
 import scala.util.{Failure, Success, Try, Using}

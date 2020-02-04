@@ -48,7 +48,7 @@ class AstParserPositiveSpec extends CliSpecBase {
   }
 
   it should "parse pipeline" in {
-    AstParser("cat build.gradle | wc | wc 'build.gradle'") shouldBe Right(PipelineExpression(Seq(
+    AstParser("cat build.gradle | wc|wc 'build.gradle'") shouldBe Right(PipelineExpression(Seq(
       Command(Word("cat"), Seq(Word("build.gradle"))),
       Command(Word("wc"), Seq.empty),
       Command(Word("wc"), Seq(QuotedText("build.gradle")))

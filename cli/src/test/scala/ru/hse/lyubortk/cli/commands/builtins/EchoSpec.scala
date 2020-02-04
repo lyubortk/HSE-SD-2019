@@ -2,9 +2,11 @@ package ru.hse.lyubortk.cli.commands.builtins
 
 import java.io.InputStream
 
+import org.apache.commons.io.input.CountingInputStream
 import ru.hse.lyubortk.cli.CliSpecBase
 import ru.hse.lyubortk.cli.commands.CommandResult.Continue
 import ru.hse.lyubortk.cli.commands.builtins.Utils._
+import ru.hse.lyubortk.cli.commands.InputStreamOps._
 
 class EchoSpec extends CliSpecBase {
   "Echo" should "print zero arguments" in {
@@ -29,5 +31,12 @@ class EchoSpec extends CliSpecBase {
     val (output, errOutput) = extractOutput(result)
     output shouldBe "abacaba hi   hey\n"
     errOutput shouldBe ""
+  }
+
+  it should "not read from stdin" in {
+    val stdin = new CountingInputStream("hello!".inputStream)
+    Echo.execute(Seq.empty, stdin, Seq.empty)
+    Echo.execute(Seq("ab", "ca"), stdin, Seq.empty)
+    stdin.getCount shouldBe 0
   }
 }
