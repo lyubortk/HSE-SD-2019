@@ -19,6 +19,16 @@ run {
     standardInput = System.in
 }
 
+test {
+    testLogging {
+        afterSuite { desc, result ->
+            if (!desc.parent) { // will match the outermost suite
+                println "Result: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
+            }
+        }
+    }
+}
+
 dependencies {
     implementation 'org.scala-lang:scala-library:2.13.1'
     implementation 'org.scala-lang.modules:scala-parser-combinators_2.13:1.1.2'
