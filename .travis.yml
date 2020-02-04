@@ -2,6 +2,8 @@ language: minimal
 os:
   - linux
   - windows
+git:
+  autocrlf: input
 env:
   global:
     - GRAVIS_REPO="https://github.com/DanySK/Gravis-CI.git"
