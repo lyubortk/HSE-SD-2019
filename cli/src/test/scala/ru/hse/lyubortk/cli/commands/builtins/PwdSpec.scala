@@ -14,7 +14,7 @@ class PwdSpec extends CliSpecBase {
     val result = Pwd.execute(Seq.empty, InputStream.nullInputStream(), Seq.empty)
     result shouldBe a [Continue]
     val (output, errOutput) = extractOutput(result)
-    output shouldBe (Paths.get(".").normalize().toAbsolutePath + "\n")
+    output shouldBe (Paths.get(".").normalize().toAbsolutePath.toString + "\n")
     errOutput shouldBe ""
   }
 
