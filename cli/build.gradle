@@ -21,6 +21,7 @@ run {
 
 test {
     testLogging {
+        exceptionFormat "full"
         afterSuite { desc, result ->
             if (!desc.parent) { // will match the outermost suite
                 println "Result: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
