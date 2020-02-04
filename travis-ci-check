@@ -1,7 +1,7 @@
 #!/bin/bash
 TERM=dumb
 result=0;
-for PROJECT_DIR in $(find -maxdepth 1 -mindepth 1 -type d -not -name '.git'); do
+for PROJECT_DIR in $(find . -maxdepth 1 -mindepth 1 -type d -not -name '.git'); do
   cd "$PROJECT_DIR";
   if ./gradlew clean check; then
     result=$((result || 0));
