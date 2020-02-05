@@ -39,7 +39,7 @@ class CommandExecutorSpec extends SpecBase {
     val (command, arguments) = if (System.getProperty("os.name").startsWith("Windows")) {
       ("cmd", Seq("/C", s"echo %${variableName}%"))
     } else {
-      ("bash", Seq(s"echo $$$variableName"))
+      ("bash", Seq("-c", s"echo $$$variableName"))
     }
     val commandExecutor = new CommandExecutor(mutable.Map(variableName -> variableValue), Map.empty)
     val result = commandExecutor.execute(command, arguments, InputStream.nullInputStream())
