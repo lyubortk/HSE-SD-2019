@@ -1,7 +1,7 @@
 package ru.hse.lyubortk.cli.commands.builtins
 
 import java.io.{FileInputStream, IOException, InputStream}
-import java.nio.charset.MalformedInputException
+import java.nio.charset.{CharacterCodingException, MalformedInputException}
 
 import org.apache.commons.io.input.CountingInputStream
 import ru.hse.lyubortk.cli.commands.CommandResult.Continue
@@ -34,7 +34,7 @@ object Wc extends Command {
           case Success(info) =>
             outputBuilder.append(info).append(' ').append(fileName).append("\n")
             info
-          case Failure(_: MalformedInputException) =>
+          case Failure(_: CharacterCodingException) =>
             errBuilder.append(CharsetErrorMessage).append("\n")
             Info.empty
           case Failure(exception) =>
@@ -52,7 +52,7 @@ object Wc extends Command {
   private def processStdin(stdin: InputStream): CommandResult =
     Try(readInputInfo(stdin)) match {
       case Success(value) => Continue(value.toString.inputStream.withNewline)
-      case Failure(_: MalformedInputException) =>
+      case Failure(_: CharacterCodingException) =>
         Continue(InputStream.nullInputStream(), CharsetErrorMessage.inputStream.withNewline)
       case Failure(exception) => Continue(InputStream.nullInputStream(), exception.getMessage.inputStream.withNewline)
     }
