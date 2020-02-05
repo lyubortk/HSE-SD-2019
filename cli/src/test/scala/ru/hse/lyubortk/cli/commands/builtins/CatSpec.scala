@@ -3,14 +3,14 @@ package ru.hse.lyubortk.cli.commands.builtins
 import java.io.InputStream
 
 import org.apache.commons.io.input.CountingInputStream
-import ru.hse.lyubortk.cli.CliSpecBase
+import ru.hse.lyubortk.cli.SpecBase
 import ru.hse.lyubortk.cli.commands.CommandResult.Continue
 import ru.hse.lyubortk.cli.commands.InputStreamOps._
-import ru.hse.lyubortk.cli.commands.builtins.Utils._
+import ru.hse.lyubortk.cli.commands.Utils._
 
-class CatSpec extends CliSpecBase {
+class CatSpec extends SpecBase {
   "Cat" should "print one file with one line" in {
-    val result = Cat.execute(Seq(s"$ResourcesFolder/simple_file"), InputStream.nullInputStream(), Seq.empty)
+    val result = Cat.execute(Seq(SimpleFile), InputStream.nullInputStream(), Seq.empty)
     result shouldBe a [Continue]
     val (output, errOutput) = extractOutput(result)
     output shouldBe "hello!\n"
@@ -18,7 +18,7 @@ class CatSpec extends CliSpecBase {
   }
 
   it should "print multiline file" in {
-    val result = Cat.execute(Seq(s"$ResourcesFolder/multi_line_file"), InputStream.nullInputStream(), Seq.empty)
+    val result = Cat.execute(Seq(MultiLineFile), InputStream.nullInputStream(), Seq.empty)
     result shouldBe a [Continue]
     val (output, errOutput) = extractOutput(result)
     output shouldBe "this is\nmultiline\nfile\n"
@@ -26,7 +26,7 @@ class CatSpec extends CliSpecBase {
   }
 
   it should "print empty file" in {
-    val result = Cat.execute(Seq(s"$ResourcesFolder/empty_file"), InputStream.nullInputStream(), Seq.empty)
+    val result = Cat.execute(Seq(EmptyFile), InputStream.nullInputStream(), Seq.empty)
     result shouldBe a [Continue]
     val (output, errOutput) = extractOutput(result)
     output shouldBe "\n"
@@ -35,10 +35,10 @@ class CatSpec extends CliSpecBase {
 
   it should "print multiple files" in {
     val result = Cat.execute(Seq(
-      s"$ResourcesFolder/simple_file",
-      s"$ResourcesFolder/simple_file",
-      s"$ResourcesFolder/multi_line_file",
-      s"$ResourcesFolder/empty_file"
+      SimpleFile,
+      SimpleFile,
+      MultiLineFile,
+      EmptyFile
     ), InputStream.nullInputStream(), Seq.empty)
     result shouldBe a [Continue]
     val (output, errOutput) = extractOutput(result)
@@ -48,13 +48,13 @@ class CatSpec extends CliSpecBase {
 
   it should "not read from stdin" in {
     val stdin = new CountingInputStream("hello!".inputStream)
-    Cat.execute(Seq(s"$ResourcesFolder/simple_file"), stdin, Seq.empty)
+    Cat.execute(Seq(SimpleFile), stdin, Seq.empty)
     Cat.execute(Seq.empty, stdin, Seq.empty)
     stdin.getCount shouldBe 0
   }
 
   it should "print error if file does not exist" in {
-    val result = Cat.execute(Seq(s"$ResourcesFolder/no_file"), InputStream.nullInputStream(), Seq.empty)
+    val result = Cat.execute(Seq(NonExistentFile), InputStream.nullInputStream(), Seq.empty)
     result shouldBe a [Continue]
     val (output, errOutput) = extractOutput(result)
     output shouldBe ""
@@ -63,9 +63,9 @@ class CatSpec extends CliSpecBase {
 
   it should "print existing files even if some arguments are invalid" in {
     val result = Cat.execute(Seq(
-      s"$ResourcesFolder/simple_file",
-      s"$ResourcesFolder/no_file",
-      s"$ResourcesFolder/simple_file"
+      SimpleFile,
+      NonExistentFile,
+      SimpleFile
     ), InputStream.nullInputStream(), Seq.empty)
     result shouldBe a [Continue]
     val (output, errOutput) = extractOutput(result)

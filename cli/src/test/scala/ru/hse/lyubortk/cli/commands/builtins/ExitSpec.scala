@@ -3,12 +3,12 @@ package ru.hse.lyubortk.cli.commands.builtins
 import java.io.InputStream
 
 import org.apache.commons.io.input.CountingInputStream
-import ru.hse.lyubortk.cli.CliSpecBase
+import ru.hse.lyubortk.cli.SpecBase
 import ru.hse.lyubortk.cli.commands.CommandResult
-import ru.hse.lyubortk.cli.commands.builtins.Utils._
+import ru.hse.lyubortk.cli.commands.Utils._
 import ru.hse.lyubortk.cli.commands.InputStreamOps._
 
-class ExitSpec extends CliSpecBase {
+class ExitSpec extends SpecBase {
   "Exit" should "return 'Exit' CommandResult with no output" in {
     val result = Exit.execute(Seq.empty, InputStream.nullInputStream(), Seq.empty)
     result shouldBe a [CommandResult.Exit]

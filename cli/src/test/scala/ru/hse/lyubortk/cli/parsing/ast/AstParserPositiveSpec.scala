@@ -1,9 +1,9 @@
 package ru.hse.lyubortk.cli.parsing.ast
 
-import ru.hse.lyubortk.cli.CliSpecBase
+import ru.hse.lyubortk.cli.SpecBase
 import ru.hse.lyubortk.cli.parsing.ast.Expression._
 
-class AstParserPositiveSpec extends CliSpecBase {
+class AstParserPositiveSpec extends SpecBase {
   "AstParser" should "parse empty string" in {
     AstParser("") shouldBe Right(PipelineExpression(Seq.empty))
   }

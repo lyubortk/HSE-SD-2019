@@ -1,6 +1,7 @@
 package ru.hse.lyubortk.cli.commands.builtins
 
 import java.io.{FileInputStream, IOException, InputStream}
+import java.nio.charset.MalformedInputException
 
 import org.apache.commons.io.input.CountingInputStream
 import ru.hse.lyubortk.cli.commands.CommandResult.Continue
@@ -11,6 +12,9 @@ import scala.io.Source
 import scala.util.{Failure, Success, Try, Using}
 
 object Wc extends Command {
+  // visible for testing
+  private[builtins] val CharsetErrorMessage = "Cannot parse input with system-default encoding"
+
   override def execute(args: Seq[String], stdin: InputStream, env: Seq[(String, String)]): CommandResult = {
     if (args.isEmpty) {
       processStdin(stdin)
@@ -30,6 +34,9 @@ object Wc extends Command {
           case Success(info) =>
             outputBuilder.append(info).append(' ').append(fileName).append("\n")
             info
+          case Failure(_: MalformedInputException) =>
+            errBuilder.append(CharsetErrorMessage).append("\n")
+            Info.empty
           case Failure(exception) =>
             errBuilder.append(exception.getMessage).append("\n")
             Info.empty
@@ -45,6 +52,8 @@ object Wc extends Command {
   private def processStdin(stdin: InputStream): CommandResult =
     Try(readInputInfo(stdin)) match {
       case Success(value) => Continue(value.toString.inputStream.withNewline)
+      case Failure(_: MalformedInputException) =>
+        Continue(InputStream.nullInputStream(), CharsetErrorMessage.inputStream.withNewline)
       case Failure(exception) => Continue(InputStream.nullInputStream(), exception.getMessage.inputStream.withNewline)
     }
 

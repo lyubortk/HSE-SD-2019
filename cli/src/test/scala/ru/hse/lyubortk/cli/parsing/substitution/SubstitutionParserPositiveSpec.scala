@@ -1,9 +1,9 @@
 package ru.hse.lyubortk.cli.parsing.substitution
 
-import ru.hse.lyubortk.cli.CliSpecBase
+import ru.hse.lyubortk.cli.SpecBase
 import ru.hse.lyubortk.cli.parsing.substitution.Token.{RegularText, SingleQuotedText, SubstitutionText}
 
-class SubstitutionParserPositiveSpec extends CliSpecBase {
+class SubstitutionParserPositiveSpec extends SpecBase {
   "SubstitutionParser" should "parse empty string" in {
     SubstitutionParser("") shouldBe Right(Seq.empty)
   }

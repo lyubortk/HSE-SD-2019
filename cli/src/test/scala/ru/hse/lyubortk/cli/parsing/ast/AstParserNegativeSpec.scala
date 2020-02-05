@@ -1,8 +1,8 @@
 package ru.hse.lyubortk.cli.parsing.ast
 
-import ru.hse.lyubortk.cli.CliSpecBase
+import ru.hse.lyubortk.cli.SpecBase
 
-class AstParserNegativeSpec extends CliSpecBase {
+class AstParserNegativeSpec extends SpecBase {
   "AstParser" should "fail on broken assignment" in {
     AstParser("=b") shouldBe a [Left[_, _]]
     AstParser("a=") shouldBe a [Left[_, _]]
