@@ -2,7 +2,7 @@ package ru.hse.lyubortk.cli.commands
 
 import java.io.{ByteArrayInputStream, InputStream, SequenceInputStream}
 
-private[commands] object InputStreamOps {
+private[cli] object InputStreamOps {
   implicit class NewLineAdder(val inputStream: InputStream) extends AnyVal {
     def withNewline: InputStream = {
       new SequenceInputStream(inputStream, new ByteArrayInputStream("\n".getBytes))
