@@ -5,6 +5,9 @@ import ru.hse.lyubortk.cli.parsing.substitution.Token._
 
 import scala.language.postfixOps
 
+/**
+ * Parses text into a sequence of tokens (which could be used to perform substitutions).
+ */
 object SubstitutionParser extends CliParser[Seq[Token]] {
   override val skipWhitespace = false
 

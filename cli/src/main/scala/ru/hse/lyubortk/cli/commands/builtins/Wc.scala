@@ -11,6 +11,11 @@ import ru.hse.lyubortk.cli.commands.{Command, CommandResult}
 import scala.io.Source
 import scala.util.{Failure, Success, Try, Using}
 
+/**
+ * Prints (to 'output' stream in CommandResult) line, word, and byte counts for each file specified as arguments.
+ * Prints errors to errOutput stream if some files cannot be opened (valid files will still be processed correctly).
+ * Reads specified stdin stream if no arguments are given.
+ */
 object Wc extends Command {
   // visible for testing
   private[builtins] val CharsetErrorMessage = "Cannot parse input with system-default encoding"

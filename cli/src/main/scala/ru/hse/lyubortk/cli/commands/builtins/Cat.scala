@@ -9,6 +9,10 @@ import ru.hse.lyubortk.cli.commands.{Command, CommandResult}
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
+/**
+ * Returns contents of files specified as arguments.
+ * Returns OS-specific error in 'errOutput' for files that cannot be opened (valid files will still be processed).
+ */
 object Cat extends Command {
   override def execute(args: Seq[String], stdin: InputStream, env: Seq[(String, String)]): CommandResult = {
     val errBuilder = new StringBuilder

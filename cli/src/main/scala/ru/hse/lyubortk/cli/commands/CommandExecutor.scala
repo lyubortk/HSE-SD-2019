@@ -5,22 +5,40 @@ import java.io.InputStream
 import ru.hse.lyubortk.cli.commands.CommandResult.Continue
 import ru.hse.lyubortk.cli.commands.InputStreamOps._
 
-import scala.collection.mutable
 import scala.sys.process.{BasicIO, Process}
 import scala.util.Using
 import scala.util.control.NonFatal
 
-class CommandExecutor(env: mutable.Map[String, String], builtins: Map[String, Command]) {
+/**
+ * This class is aimed at resolving internal commands by their name and executing them. Will try to execute
+ * external command in a separate process if the command name can't be resolved internally.
+ *
+ * @param builtins internal commands.
+ */
+class CommandExecutor(builtins: Map[String, Command]) {
+
   import ru.hse.lyubortk.cli.commands.CommandExecutor.getExternalCommand
 
-  def execute(command: String, arguments: Seq[String], stdin: InputStream): CommandResult =
+  /**
+   * Tries to resolve a builtin and execute it. Calls external commands with [[scala.sys.process.Process]] if the
+   * specified name is unknown to the executor.
+   *
+   * @param command   the name of the command
+   * @param arguments command arguments
+   * @param stdin     this stream will be connected to the stdin of the called command/process
+   * @param env       current environment
+   */
+  def execute(command: String,
+              arguments: Seq[String] = Seq.empty,
+              stdin: InputStream = InputStream.nullInputStream(),
+              env: Seq[(String, String)] = Seq.empty): CommandResult =
     builtins
       .getOrElse(command, getExternalCommand(command))
-      .execute(arguments, stdin, env.toSeq)
+      .execute(arguments, stdin, env)
 }
 
 object CommandExecutor {
-  def getExternalCommand(name: String): Command = new Command {
+  private[commands] def getExternalCommand(name: String): Command = new Command {
     var processOutput: InputStream = _
     var processErrOutput: InputStream = _
 

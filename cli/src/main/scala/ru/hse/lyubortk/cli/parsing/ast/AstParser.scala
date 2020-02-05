@@ -5,6 +5,9 @@ import ru.hse.lyubortk.cli.parsing.ast.Expression._
 
 import scala.language.postfixOps
 
+/**
+ * Parses expression from single input line.
+ */
 object AstParser extends CliParser[Expression] {
   private val quotedText: Parser[QuotedText] = """'[^']*'|"[^"]*"""".r ^^ { text =>
     QuotedText(text.tail.init)

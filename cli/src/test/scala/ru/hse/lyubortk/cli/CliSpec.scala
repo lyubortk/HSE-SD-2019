@@ -26,12 +26,15 @@ class CliSpec extends SpecBase {
     val astParser: CliParser[Expression] = new CliParser[Expression] {
       override protected def parser: Parser[Expression] = """.*""".r ^^ (_ => PipelineExpression(Seq.empty))
     }
-    val commandExecutorBuilder = { env: mutable.Map[String, String] => new CommandExecutor(env, Map.empty) {
-      override def execute(command: String, arguments: Seq[String], stdin: InputStream): CommandResult = {
+    val commandExecutorBuilder = new CommandExecutor(Map.empty) {
+      override def execute(command: String,
+                           arguments: Seq[String],
+                           stdin: InputStream,
+                           env: Seq[(String, String)]): CommandResult = {
         fail("cli called command executor")
         Exit()
       }
-    }}
+    }
 
     val (byteArrayOutputStream, printStream, io) = generateIO("\t\t\t    \t\n\n  \n    \n \t \n")
 
@@ -57,8 +60,11 @@ class CliSpec extends SpecBase {
       }
     }
 
-    val commandExecutorBuilder = { env: mutable.Map[String, String] => new CommandExecutor(env, Map.empty) {
-      override def execute(command: String, arguments: Seq[String], stdin: InputStream): CommandResult = {
+    val commandExecutorBuilder = new CommandExecutor(Map.empty) {
+      override def execute(command: String,
+                           arguments: Seq[String],
+                           stdin: InputStream,
+                           env: Seq[(String, String)]): CommandResult = {
         val input = IOUtils.toString(stdin, Charset.defaultCharset())
         if (command == "1") {
           input shouldBe ""
@@ -73,7 +79,7 @@ class CliSpec extends SpecBase {
           fail("cli passed unknown command to command executor")
         }
       }
-    }}
+    }
 
     val (byteArrayOutputStream, printStream, io) = generateIO("1 | 2 | 3")
 
@@ -95,8 +101,11 @@ class CliSpec extends SpecBase {
       }
     }
 
-    val commandExecutorBuilder = { env: mutable.Map[String, String] => new CommandExecutor(env, Map.empty) {
-      override def execute(command: String, arguments: Seq[String], stdin: InputStream): CommandResult = {
+    val commandExecutorBuilder = new CommandExecutor(Map.empty) {
+      override def execute(command: String,
+                           arguments: Seq[String],
+                           stdin: InputStream,
+                           env: Seq[(String, String)]): CommandResult = {
         if (command == "1") {
           Continue()
         } else if (command == "exit") {
@@ -105,7 +114,7 @@ class CliSpec extends SpecBase {
           fail("cli executed command after exit")
         }
       }
-    }}
+    }
 
     val (byteArrayOutputStream, printStream, io) = generateIO("1 | exit | 3\n4 \n 5 | 6")
     val cli = new Cli(Map.empty, commandExecutorBuilder, dummySubstitutionParser, astParser, io)
@@ -132,19 +141,25 @@ class CliSpec extends SpecBase {
           ("echo2 20" ^^ (_ => PipelineExpression(Seq(Command(Word("echo2"), Seq(Word("20")))))))
     }
 
-    val commandExecutorBuilder = { env: mutable.Map[String, String] => new CommandExecutor(env, Map.empty) {
-      override def execute(command: String, arguments: Seq[String], stdin: InputStream): CommandResult = {
+    val commandExecutorBuilder = new CommandExecutor(Map.empty) {
+      override def execute(command: String,
+                           arguments: Seq[String],
+                           stdin: InputStream,
+                           env: Seq[(String, String)]): CommandResult = {
+        val envMap = env.toMap.withDefault(_ => "")
         if (command == "echo1") {
           arguments shouldBe Seq("10")
+          envMap("a") shouldBe "10"
           Continue("ok1".inputStream.withNewline)
         } else if (command == "echo2") {
           arguments shouldBe Seq("20")
+          envMap("a") shouldBe "20"
           Continue("ok2".inputStream.withNewline)
         } else {
           fail("cli passed unknown command to command executor")
         }
       }
-    }}
+    }
 
     val (byteArrayOutputStream, printStream, io) = generateIO(
       """a=10

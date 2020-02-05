@@ -23,10 +23,10 @@ class CommandExecutorSpec extends SpecBase {
       }
     }
     val env = mutable.Map("hello" -> "hi")
-    val commandExecutor = new CommandExecutor(env, Map("mock-command" -> builtin))
+    val commandExecutor = new CommandExecutor(Map("mock-command" -> builtin))
     val args = Seq("a", "b", "c")
     val stdin = "hi".inputStream
-    val result = commandExecutor.execute("mock-command", args, stdin)
+    val result = commandExecutor.execute("mock-command", args, stdin, env.toSeq)
     result shouldBe a [Exit]
     builtin.args shouldBe theSameInstanceAs (args)
     builtin.stdin shouldBe theSameInstanceAs (stdin)
@@ -41,8 +41,8 @@ class CommandExecutorSpec extends SpecBase {
     } else {
       ("bash", Seq("-c", s"echo $$$variableName"))
     }
-    val commandExecutor = new CommandExecutor(mutable.Map(variableName -> variableValue), Map.empty)
-    val result = commandExecutor.execute(command, arguments, InputStream.nullInputStream())
+    val commandExecutor = new CommandExecutor(Map.empty)
+    val result = commandExecutor.execute(command, arguments, env = Seq(variableName -> variableValue))
     result shouldBe a [Continue]
     val (output, errOutput) = extractOutput(result)
     assert(output.contains(variableValue))
@@ -50,12 +50,8 @@ class CommandExecutorSpec extends SpecBase {
   }
 
   it should "process unknown commands correctly" in {
-    val commandExecutor = new CommandExecutor(mutable.Map.empty, Map.empty)
-    val result = commandExecutor.execute(
-      "this-command-should-not-exit-abacaba",
-      Seq.empty,
-      InputStream.nullInputStream()
-    )
+    val commandExecutor = new CommandExecutor(Map.empty)
+    val result = commandExecutor.execute("this-command-should-not-exist-abacaba")
     result shouldBe a [Continue]
     val (output, errOutput) = extractOutput(result)
     output shouldBe ""

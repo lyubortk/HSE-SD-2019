@@ -8,6 +8,9 @@ import ru.hse.lyubortk.cli.commands.{Command, CommandResult}
 
 import scala.util.{Failure, Success, Try}
 
+/**
+ * Returns current working directory.
+ */
 object Pwd extends Command {
   override def execute(args: Seq[String], stdin: InputStream, env: Seq[(String, String)]): CommandResult = {
     Try(System.getProperty("user.dir")) match {
