@@ -1,69 +1,62 @@
 package ru.hse.lyubortk.cli.commands.builtins
 
 import java.io.{FileInputStream, IOException, InputStream}
-import java.nio.charset.{CharacterCodingException, MalformedInputException}
+import java.nio.charset.CharacterCodingException
 
 import org.apache.commons.io.input.CountingInputStream
+import ru.hse.lyubortk.cli.commands.CommandResult
 import ru.hse.lyubortk.cli.commands.CommandResult.Continue
 import ru.hse.lyubortk.cli.commands.InputStreamOps._
-import ru.hse.lyubortk.cli.commands.{Command, CommandResult}
+import ru.hse.lyubortk.cli.commands.builtins.InputProcessingCommand.BaseConfig
 
 import scala.io.Source
-import scala.util.{Failure, Success, Try, Using}
+import scala.util.{Failure, Success, Using}
 
 /**
  * Prints (to 'output' stream in CommandResult) line, word, and byte counts for each file specified as arguments.
  * Prints errors to errOutput stream if some files cannot be opened (valid files will still be processed correctly).
  * Reads specified stdin stream if no arguments are given.
  */
-object Wc extends Command {
-  // visible for testing
-  private[builtins] val CharsetErrorMessage = "Cannot parse input with system-default encoding"
+object Wc extends InputProcessingCommand {
+  type ProcessingResult = Info
+  type ConfigType = BaseConfig
 
-  override def execute(args: Seq[String], stdin: InputStream, env: Seq[(String, String)]): CommandResult = {
-    if (args.isEmpty) {
-      processStdin(stdin)
-    } else {
-      processArguments(args)
-    }
+  override protected def parseArguments(args: Seq[String]): BaseConfig = new BaseConfig {
+    override def fileNames: Seq[String] = args
+    override def shouldExit: Boolean = false
+    override def output: InputStream = InputStream.nullInputStream()
+    override def errOutput: InputStream = InputStream.nullInputStream()
   }
 
-  private def processArguments(args: Seq[String]): CommandResult = {
+  override def executeWithArguments(config: BaseConfig): CommandResult = {
+    val fileNames = config.fileNames
     val errBuilder = new StringBuilder
     val outputBuilder = new StringBuilder
-    val totalInfo = args.foldLeft(Info.empty) { case (accumulatedInfo, fileName) =>
-      val currentInfo =
-        Using(new FileInputStream(fileName)) { inputStream =>
-          readInputInfo(inputStream)
-        } match {
-          case Success(info) =>
-            outputBuilder.append(info).append(' ').append(fileName).append("\n")
-            info
-          case Failure(_: CharacterCodingException) =>
-            errBuilder.append(CharsetErrorMessage).append("\n")
-            Info.empty
-          case Failure(exception) =>
-            errBuilder.append(exception.getMessage).append("\n")
-            Info.empty
-        }
+
+    val totalInfo = fileNames.foldLeft(Info.empty) { case (accumulatedInfo, fileName) =>
+      val currentInfo = Using(new FileInputStream(fileName)) { inputStream =>
+        processInput(inputStream, config)
+      } match {
+        case Success(info) =>
+          outputBuilder.append(info).append(' ').append(fileName).append("\n")
+          info
+        case Failure(_: CharacterCodingException) =>
+          errBuilder.append(CharsetErrorMessage).append("\n")
+          Info.empty
+        case Failure(exception) =>
+          errBuilder.append(exception.getMessage).append("\n")
+          Info.empty
+      }
       accumulatedInfo combine currentInfo
     }
-    if (args.size > 1) {
+    if (fileNames.size > 1) {
       outputBuilder.append(totalInfo).append(' ').append("total").append("\n")
     }
     Continue(outputBuilder.toString().inputStream, errBuilder.toString().inputStream)
   }
 
-  private def processStdin(stdin: InputStream): CommandResult =
-    Try(readInputInfo(stdin)) match {
-      case Success(value) => Continue(value.toString.inputStream.withNewline)
-      case Failure(_: CharacterCodingException) =>
-        Continue(InputStream.nullInputStream(), CharsetErrorMessage.inputStream.withNewline)
-      case Failure(exception) => Continue(InputStream.nullInputStream(), exception.getMessage.inputStream.withNewline)
-    }
-
   @throws[IOException]
-  private def readInputInfo(input: InputStream): Info = {
+  override def processInput(input: InputStream, config: BaseConfig): Info = {
     val countingInput = new CountingInputStream(input)
     val source = Source.fromInputStream(countingInput)
     val (lines, words) = source.getLines().foldLeft((0, 0)) {
@@ -86,5 +79,4 @@ object Wc extends Command {
   object Info {
     val empty: Info = Info(0, 0, 0)
   }
-
 }
