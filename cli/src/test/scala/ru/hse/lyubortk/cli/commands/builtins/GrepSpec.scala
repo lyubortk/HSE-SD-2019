@@ -1,5 +1,7 @@
 package ru.hse.lyubortk.cli.commands.builtins
 
+import java.io.InputStream
+
 import org.apache.commons.io.input.CountingInputStream
 import ru.hse.lyubortk.cli.SpecBase
 import ru.hse.lyubortk.cli.commands.CommandResult.Continue
@@ -174,6 +176,20 @@ class GrepSpec extends SpecBase {
         |""".stripMargin
     output shouldBe expected
     errOutput shouldBe ""
+  }
+
+  it should "process existing files even if some arguments are invalid" in {
+    val result = Grep.execute(Seq(
+      ".ello[^w]",
+      SimpleFile,
+      NonExistentFile,
+      BinaryFile,
+      SimpleFile
+    ), InputStream.nullInputStream(), Seq.empty)
+    val (output, errOutput) = extractOutput(result)
+    output shouldBe s"hello!\nhello!\n"
+    errOutput shouldNot have length 0
+    assert(errOutput.contains(Wc.CharsetErrorMessage))
   }
 }
 
