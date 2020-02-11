@@ -1,11 +1,13 @@
 package ru.hse.lyubortk.cli.commands.builtins
 
-import java.io.{ByteArrayOutputStream, IOException, InputStream}
+import java.io.{IOException, InputStream}
 
-import ru.hse.lyubortk.cli.commands.builtins.InputProcessingCommand.BaseConfig
-import ru.hse.lyubortk.cli.commands.InputStreamOps._
 import org.rogach.scallop._
 import org.rogach.scallop.exceptions.{Help, ScallopException, Version}
+import ru.hse.lyubortk.cli.commands.InputStreamOps._
+import ru.hse.lyubortk.cli.commands.builtins.InputProcessingCommand.BaseConfig
+
+import scala.language.postfixOps
 
 import scala.io.Source
 
@@ -48,7 +50,12 @@ object Grep extends InputProcessingCommand {
     val pattern = trailArg[String]("PATTERN", descr = "regex pattern")
     val ignoreCase = toggle("ignore-case", descrYes = "ignore case distinctions")
     val word = toggle("word", descrYes = "force PATTERN to match only whole words")
-    val after = opt[Int]("after-context", short = 'A', descr = "print NUM lines of trailing context")
+    val after = opt[Int](
+      name = "after-context",
+      short = 'A',
+      descr = "print NUM lines of trailing context",
+      validate = (0 <=)
+    )
     private val files = trailArg[List[String]](
       name = "FILE...",
       descr = "Search for PATTERN in each FILE",
