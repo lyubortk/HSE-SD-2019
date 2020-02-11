@@ -5,33 +5,34 @@ import java.io.{IOException, InputStream}
 import org.rogach.scallop._
 import org.rogach.scallop.exceptions.{Help, ScallopException, Version}
 import ru.hse.lyubortk.cli.commands.InputStreamOps._
-import ru.hse.lyubortk.cli.commands.builtins.InputProcessingCommand.BaseConfig
+import ru.hse.lyubortk.cli.commands.builtins.InputProcessingCommand.BaseOptions
 
 import scala.language.postfixOps
 
 import scala.io.Source
 
 /**
- *
+ * Searches the named input files for lines containing a match to the given regex.
+ * If no files are specified searches in 'stdin' stream. Prints matched lines to 'output' stream.
  */
 object Grep extends InputProcessingCommand {
   override protected type ProcessingResult = String
-  override protected type ConfigType = Conf
+  override protected type OptionsType = GrepOptions
 
-  override protected def parseArguments(args: Seq[String]): Conf = new Conf(args)
+  override protected def parseArguments(args: Seq[String]): GrepOptions = new GrepOptions(args)
 
   @throws[IOException]
-  override protected def processInput(input: InputStream, config: ConfigType): String = {
+  override protected def processInput(input: InputStream, options: OptionsType): String = {
     val source = Source.fromInputStream(input)
-    var patternString = config.pattern()
-    if (config.word.getOrElse(false)) {
+    var patternString = options.pattern()
+    if (options.word.getOrElse(false)) {
       patternString = "\\b" + patternString + "\\b"
     }
-    if (config.ignoreCase.getOrElse(false)) {
+    if (options.ignoreCase.getOrElse(false)) {
       patternString = "(?i)" + patternString
     }
     val pattern = patternString.r.unanchored
-    val after = config.after.getOrElse(0)
+    val after = options.after.getOrElse(0)
     val builder = new StringBuilder
     source.getLines().foldLeft(0) {
       case (_, string) if pattern.matches(string) =>
@@ -45,7 +46,7 @@ object Grep extends InputProcessingCommand {
     builder.dropRight(1).toString()
   }
 
-  protected class Conf(arguments: Seq[String]) extends ScallopConf(arguments) with BaseConfig {
+  protected class GrepOptions(arguments: Seq[String]) extends ScallopConf(arguments) with BaseOptions {
     private val Header = "Usage: grep [OPTIONS] PATTERN [FILE...]\n"
     val pattern = trailArg[String]("PATTERN", descr = "regex pattern")
     val ignoreCase = toggle("ignore-case", descrYes = "ignore case distinctions")

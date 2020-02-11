@@ -7,7 +7,7 @@ import org.apache.commons.io.input.CountingInputStream
 import ru.hse.lyubortk.cli.commands.CommandResult
 import ru.hse.lyubortk.cli.commands.CommandResult.Continue
 import ru.hse.lyubortk.cli.commands.InputStreamOps._
-import ru.hse.lyubortk.cli.commands.builtins.InputProcessingCommand.BaseConfig
+import ru.hse.lyubortk.cli.commands.builtins.InputProcessingCommand.BaseOptions
 
 import scala.io.Source
 import scala.util.{Failure, Success, Using}
@@ -19,16 +19,16 @@ import scala.util.{Failure, Success, Using}
  */
 object Wc extends InputProcessingCommand {
   type ProcessingResult = Info
-  type ConfigType = BaseConfig
+  type OptionsType = BaseOptions
 
-  override protected def parseArguments(args: Seq[String]): BaseConfig = new BaseConfig {
+  override protected def parseArguments(args: Seq[String]): BaseOptions = new BaseOptions {
     override def fileNames: Seq[String] = args
     override def shouldExit: Boolean = false
     override def output: InputStream = InputStream.nullInputStream()
     override def errOutput: InputStream = InputStream.nullInputStream()
   }
 
-  override def executeWithArguments(config: BaseConfig): CommandResult = {
+  override def executeWithArguments(config: BaseOptions): CommandResult = {
     val fileNames = config.fileNames
     val errBuilder = new StringBuilder
     val outputBuilder = new StringBuilder
@@ -56,7 +56,7 @@ object Wc extends InputProcessingCommand {
   }
 
   @throws[IOException]
-  override def processInput(input: InputStream, config: BaseConfig): Info = {
+  override def processInput(input: InputStream, options: BaseOptions): Info = {
     val countingInput = new CountingInputStream(input)
     val source = Source.fromInputStream(countingInput)
     val (lines, words) = source.getLines().foldLeft((0, 0)) {

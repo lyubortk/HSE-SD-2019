@@ -5,17 +5,18 @@ import java.nio.charset.CharacterCodingException
 
 import ru.hse.lyubortk.cli.commands.CommandResult.Continue
 import ru.hse.lyubortk.cli.commands.InputStreamOps._
-import ru.hse.lyubortk.cli.commands.builtins.InputProcessingCommand.BaseConfig
+import ru.hse.lyubortk.cli.commands.builtins.InputProcessingCommand.BaseOptions
 import ru.hse.lyubortk.cli.commands.{Command, CommandResult}
 
 import scala.util.{Failure, Success, Try, Using}
 
 /**
- *
+ * A common base trait for commands that process either files in arguments or read 'stdin' stream.
+ * (E.g. Grep and Wc)
  */
 protected trait InputProcessingCommand extends Command {
   protected type ProcessingResult
-  protected type ConfigType <: BaseConfig
+  protected type OptionsType <: BaseOptions
   protected[builtins] val CharsetErrorMessage = "Cannot parse input with system-default encoding"
 
   override def execute(args: Seq[String], stdin: InputStream, env: Seq[(String, String)]): CommandResult = {
@@ -29,12 +30,12 @@ protected trait InputProcessingCommand extends Command {
     }
   }
 
-  protected def executeWithArguments(config: ConfigType): CommandResult = {
+  protected def executeWithArguments(options: OptionsType): CommandResult = {
     val errBuilder = new StringBuilder
     val outputBuilder = new StringBuilder
-    config.fileNames.foreach { fileName =>
+    options.fileNames.foreach { fileName =>
       Using(new FileInputStream(fileName)) { inputStream =>
-        processInput(inputStream, config)
+        processInput(inputStream, options)
       } match {
         case Success(result) =>
           outputBuilder.append(result).append("\n")
@@ -47,8 +48,8 @@ protected trait InputProcessingCommand extends Command {
     Continue(outputBuilder.toString().inputStream, errBuilder.toString().inputStream)
   }
 
-  protected def executeWithStdin(stdin: InputStream, config: ConfigType): CommandResult =
-    Try(processInput(stdin, config)) match {
+  protected def executeWithStdin(stdin: InputStream, options: OptionsType): CommandResult =
+    Try(processInput(stdin, options)) match {
       case Success(value) => Continue(value.toString.inputStream.withNewline)
       case Failure(_: CharacterCodingException) =>
         Continue(InputStream.nullInputStream(), CharsetErrorMessage.inputStream.withNewline)
@@ -56,13 +57,13 @@ protected trait InputProcessingCommand extends Command {
     }
 
   @throws[IOException]
-  protected def processInput(input: InputStream, config: ConfigType): ProcessingResult
+  protected def processInput(input: InputStream, options: OptionsType): ProcessingResult
 
-  protected def parseArguments(args: Seq[String]): ConfigType
+  protected def parseArguments(args: Seq[String]): OptionsType
 }
 
 object InputProcessingCommand {
-  trait BaseConfig {
+  trait BaseOptions {
     def fileNames: Seq[String]
     def shouldExit: Boolean
     def output: InputStream
