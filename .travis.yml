@@ -3,8 +3,6 @@ os:
   - linux
   - osx
   - windows
-git:
-  autocrlf: true
 env:
   global:
     - GRAVIS_REPO="https://github.com/DanySK/Gravis-CI.git"
