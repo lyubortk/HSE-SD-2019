@@ -46,11 +46,15 @@ class CatSpec extends SpecBase {
     errOutput shouldBe ""
   }
 
-  it should "not read from stdin" in {
+  it should "read from stdin if no arguments are given" in {
     val stdin = new CountingInputStream("hello!".inputStream)
     Cat.execute(Seq(SimpleFile), stdin, Seq.empty)
-    Cat.execute(Seq.empty, stdin, Seq.empty)
     stdin.getCount shouldBe 0
+    val result = Cat.execute(Seq.empty, stdin, Seq.empty)
+    result shouldBe a [Continue]
+    val (output, errOutput) = extractOutput(result)
+    output shouldBe "hello!"
+    errOutput shouldBe ""
   }
 
   it should "print error if file does not exist" in {
