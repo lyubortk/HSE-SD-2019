@@ -1,13 +1,7 @@
 ## Запуск
 Для сборки нужна установленная JDK 11
 
-Unix:
-
 `gradlew run --console=plain`
-
-Windows:
-
-`gradlew.bat run --console=plain`
 
 ## Архитектура
 
