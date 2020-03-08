@@ -1,7 +1,7 @@
 package ru.hse.lyubortk.cli.parsing.substitution
 
 import ru.hse.lyubortk.cli.SpecBase
-import ru.hse.lyubortk.cli.parsing.substitution.Token.{RegularText, SingleQuotedText, SubstitutionText}
+import ru.hse.lyubortk.cli.parsing.substitution.Token.{RegularText, SubstitutionText}
 
 class SubstitutionParserPositiveSpec extends SpecBase {
   "SubstitutionParser" should "parse empty string" in {
@@ -22,20 +22,30 @@ class SubstitutionParserPositiveSpec extends SpecBase {
       SubstitutionText("hello"),
       RegularText("\"")
     ))
+    SubstitutionParser("\"'$hello'\"") shouldBe Right(Seq(
+      RegularText("\""),
+      RegularText("'"),
+      SubstitutionText("hello"),
+      RegularText("'"),
+      RegularText("\"")
+    ))
   }
 
   it should "not parse substitution in single quotes" in {
-    SubstitutionParser("'$hello'") shouldBe Right(Seq(SingleQuotedText("'$hello'")))
+    SubstitutionParser("'$hello'") shouldBe Right(Seq(RegularText("'$hello'")))
   }
 
   it should "parse substitution right after other text" in {
     SubstitutionParser(" echo   hello$name \"bye$name2\" 'hell'$o ") shouldBe Right(Seq(
       RegularText(" echo   hello"),
       SubstitutionText("name"),
-      RegularText(" \"bye"),
+      RegularText(" "),
+      RegularText("\""),
+      RegularText("bye"),
       SubstitutionText("name2"),
-      RegularText("\" "),
-      SingleQuotedText("'hell'"),
+      RegularText("\""),
+      RegularText(" "),
+      RegularText("'hell'"),
       SubstitutionText("o"),
       RegularText(" ")
     ))

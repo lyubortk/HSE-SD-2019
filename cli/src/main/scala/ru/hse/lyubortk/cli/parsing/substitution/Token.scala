@@ -8,14 +8,8 @@ sealed trait Token {
 }
 
 object Token {
-
   /**
-   * Text wrapped in single quotes (quotes will still be included in the text string).
-   */
-  case class SingleQuotedText(text: String) extends Token
-
-  /**
-   * Just a regular text which could include multiple words and double quotes.
+   * Just a regular text which could include anything except a substitution.
    */
   case class RegularText(text: String) extends Token
 

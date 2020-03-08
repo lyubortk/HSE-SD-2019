@@ -7,8 +7,7 @@ class SubstitutionParserNegativeSpec extends SpecBase {
     SubstitutionParser("cat ' ") shouldBe a [Left[_, _]]
   }
 
-  "SubstitutionParser" should "fail on double multiple subsequent dollar signs" in {
-    SubstitutionParser("cat $$ ") shouldBe a [Left[_, _]]
-    SubstitutionParser("cat $$$ a") shouldBe a [Left[_, _]]
+  "SubstitutionParser" should "fail on unclosed double quotes" in {
+    SubstitutionParser("cat \" ") shouldBe a [Left[_, _]]
   }
 }
