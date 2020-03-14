@@ -1,7 +1,7 @@
 package ru.hse.lyubortk.cli
 
 import ru.hse.lyubortk.cli.commands.CommandExecutor
-import ru.hse.lyubortk.cli.commands.builtins.{Cat, Echo, Exit, Pwd, Wc}
+import ru.hse.lyubortk.cli.commands.builtins.{Cat, Echo, Exit, Grep, Pwd, Wc}
 import ru.hse.lyubortk.cli.parsing.ast.AstParser
 import ru.hse.lyubortk.cli.parsing.substitution.SubstitutionParser
 
@@ -16,7 +16,8 @@ object Main {
       "echo" -> Echo,
       "exit" -> Exit,
       "pwd" -> Pwd,
-      "wc" -> Wc
+      "wc" -> Wc,
+      "grep" -> Grep
     )
     val cli = new Cli(
       sys.env,
